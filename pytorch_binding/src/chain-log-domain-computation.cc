@@ -35,7 +35,7 @@ ChainLogDomainComputation::ChainLogDomainComputation(
     torch::Tensor nnet_output,
     torch::Tensor batch_sizes,
     torch::Tensor sequence_lengths,
-    int num_states) {
+    int num_states, bool reduce) {
 
   cuda_ = nnet_output.type().is_cuda();
   num_sequences_ = (int) nnet_output.size(0);
@@ -53,6 +53,7 @@ ChainLogDomainComputation::ChainLogDomainComputation(
   initial_probs_ = initial_probs;
   final_probs_ = final_probs;
   start_state_ = start_state.to(torch::kLong);
+  reduce_ = reduce;
 
   nnet_output_deriv_ = torch::full_like(nnet_output, -std::numeric_limits<float>::infinity());
   nnet_output_ = nnet_output;
@@ -186,7 +187,10 @@ torch::Tensor ChainLogDomainComputation::ComputeTotLogLike() {
       alpha_frame_tot, alpha_frame_tot.new_zeros({1}));
 
   tot_log_prob_.copy_(alpha_frame_log_tot.sum(1) + last_frame_alpha_sum); // B
-  return tot_log_prob_.sum();
+  if (reduce_)
+    return tot_log_prob_.sum();
+  else
+    return tot_log_prob_;
 }
 
 void ChainLogDomainComputation::BetaLastFrame() {

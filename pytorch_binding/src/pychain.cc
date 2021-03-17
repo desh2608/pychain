@@ -38,7 +38,8 @@ std::vector<torch::Tensor> ForwardBackward(
     torch::Tensor batch_sizes,
     torch::Tensor sequence_lengths,
     int num_states,
-    float leaky_hmm_coefficient=1.0e-05) {
+    float leaky_hmm_coefficient=1.0e-05,
+    bool reduce=true) {
   CHECK_CONTIGUOUS(forward_transitions);
   CHECK_CONTIGUOUS(forward_transition_indices);
   CHECK_CONTIGUOUS(forward_transition_probs);
@@ -68,7 +69,8 @@ std::vector<torch::Tensor> ForwardBackward(
       batch_sizes,
       sequence_lengths,
       num_states,
-      leaky_hmm_coefficient);
+      leaky_hmm_coefficient,
+      reduce);
 
   auto obj = chain.Forward();
   bool ret = chain.Backward();
@@ -91,7 +93,8 @@ std::vector<torch::Tensor> ForwardBackwardLogDomain(
     torch::Tensor nnet_output,
     torch::Tensor batch_sizes,
     torch::Tensor sequence_lengths,
-    int num_states) {
+    int num_states,
+    bool reduce=true) {
   CHECK_CONTIGUOUS(forward_transitions);
   CHECK_CONTIGUOUS(forward_transition_indices);
   CHECK_CONTIGUOUS(forward_transition_probs);
@@ -118,7 +121,8 @@ std::vector<torch::Tensor> ForwardBackwardLogDomain(
       nnet_output,
       batch_sizes,
       sequence_lengths,
-      num_states);
+      num_states,
+      reduce);
 
   auto obj = chain.Forward();
   bool ret = chain.Backward();

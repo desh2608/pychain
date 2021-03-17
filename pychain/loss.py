@@ -26,16 +26,21 @@ import pychain_C
 
 class ChainFunction(torch.autograd.Function):
     @staticmethod
-    def forward(ctx, input, input_lengths, graphs, leaky_coefficient=1e-5):
-        input = input.contiguous().clamp(-30, 30)  # clamp for both the denominator and the numerator
+    def forward(ctx, input, input_lengths, graphs, leaky_coefficient=1e-5, reduce=True):
+        input = input.contiguous().clamp(
+            -30, 30
+        )  # clamp for both the denominator and the numerator
         B = input.size(0)
         if B != graphs.batch_size:
             raise ValueError(
-                "input batch size ({}) does not equal to graph batch size ({})"
-                .format(B, graphs.batch_size)
+                "input batch size ({}) does not equal to graph batch size ({})".format(
+                    B, graphs.batch_size
+                )
             )
         packed_data = torch.nn.utils.rnn.pack_padded_sequence(
-            input, input_lengths, batch_first=True,
+            input,
+            input_lengths,
+            batch_first=True,
         )
         batch_sizes = packed_data.batch_sizes
         input_lengths = input_lengths.cpu()
@@ -57,6 +62,7 @@ class ChainFunction(torch.autograd.Function):
                 input_lengths,
                 graphs.num_states,
                 leaky_coefficient,
+                reduce=reduce,
             )
         else:  # usually for the numerator
             objf, log_probs_grad, ok = pychain_C.forward_backward_log_domain(
@@ -73,6 +79,7 @@ class ChainFunction(torch.autograd.Function):
                 batch_sizes,
                 input_lengths,
                 graphs.num_states,
+                reduce=reduce,
             )
             input_grad = log_probs_grad.exp()
 
@@ -81,7 +88,7 @@ class ChainFunction(torch.autograd.Function):
 
     @staticmethod
     def backward(ctx, objf_grad):
-        input_grad, = ctx.saved_tensors
+        (input_grad,) = ctx.saved_tensors
         input_grad = torch.mul(input_grad, objf_grad)
 
         return input_grad, None, None, None

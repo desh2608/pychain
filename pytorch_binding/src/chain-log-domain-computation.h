@@ -50,7 +50,7 @@ class ChainLogDomainComputation {
     torch::Tensor nnet_output,
     torch::Tensor batch_sizes,
     torch::Tensor sequence_lengths,
-    int num_states);
+    int num_states, bool reduce=true);
 
   // Does the forward computation, and returns the total log-like summed over
   // all sequences.  You will have to scale this by any supervision weighting
@@ -94,6 +94,8 @@ class ChainLogDomainComputation {
   int num_pdfs_;
   // number of transitions
   int num_transitions_;
+  // Flag which specifies whether to reduce batch error with sum
+  bool reduce_;
 
   torch::Tensor forward_transitions_;
   torch::Tensor forward_transition_indices_;

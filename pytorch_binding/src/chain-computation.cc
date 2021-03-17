@@ -35,7 +35,9 @@ ChainComputation::ChainComputation(
     torch::Tensor exp_nnet_output,
     torch::Tensor batch_sizes,
     torch::Tensor sequence_lengths,
-    int num_states, float leaky_hmm_coefficient) {
+    int num_states,
+    float leaky_hmm_coefficient,
+    bool reduce) {
 
   cuda_ = exp_nnet_output.type().is_cuda();
   num_sequences_ = (int) exp_nnet_output.size(0);
@@ -67,6 +69,7 @@ ChainComputation::ChainComputation(
   // log-space.
   assert(leaky_hmm_coefficient > 0.0 && leaky_hmm_coefficient < 1.0);
   leaky_hmm_coefficient_ = leaky_hmm_coefficient;
+  reduce_ = reduce;
 
   alpha_ = exp_nnet_output.new_zeros({num_sequences_, num_frames_ + 1, num_states_ + 1});
   beta_ = exp_nnet_output.new_zeros({num_sequences_, 2, num_states_});
@@ -226,7 +229,10 @@ torch::Tensor ChainComputation::ComputeTotLogLike() {
   // as alpha_frame_log_tot is padded with 0.0, the sum below is fine
   tot_log_prob_.copy_(alpha_frame_log_tot.sum(1) + last_frame_alpha_dash_sum.log()); // B
   tot_prob_.copy_(tot_log_prob_.exp()); // B
-  return tot_log_prob_.sum();
+  if (reduce_)
+    return tot_log_prob_.sum();
+  else
+    return tot_log_prob_;
 }
 
 void ChainComputation::BetaDashLastFrame() {

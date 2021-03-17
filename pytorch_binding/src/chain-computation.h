@@ -176,7 +176,9 @@ class ChainComputation {
     torch::Tensor exp_nnet_output,
     torch::Tensor batch_sizes,
     torch::Tensor sequence_lengths,
-    int num_states, float leaky_hmm_coefficient=1.0e-05);
+    int num_states,
+    float leaky_hmm_coefficient=1.0e-05,
+    bool reduce=true);
 
   // Does the forward computation, and returns the total log-like summed over
   // all sequences.  You will have to scale this by any supervision weighting
@@ -233,6 +235,8 @@ class ChainComputation {
   // HMM state, to ensure gradual forgetting of context (can improve generalization).
   // For numerical reasons, may not be exactly zero.
   float leaky_hmm_coefficient_;
+  // Flag which specifies whether to reduce batch error with sum
+  bool reduce_;
 
   torch::Tensor forward_transitions_;
   torch::Tensor forward_transition_indices_;
